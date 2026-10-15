@@ -48,6 +48,22 @@ export default function App() {
 
   // Subscribe to storage changes
   useEffect(() => {
+    // Initial sync from Google Sheets on app startup
+    const currentSettings = storage.getSettings();
+    if (currentSettings.googleSheetsUrl) {
+      storage.syncFromCloud(currentSettings.googleSheetsUrl).catch((err) => {
+        console.warn('Initial cloud sync notice:', err);
+      });
+    }
+
+    // Periodic sync every 25 seconds so multiple devices stay up to date
+    const interval = setInterval(() => {
+      const s = storage.getSettings();
+      if (s.googleSheetsUrl) {
+        storage.syncFromCloud(s.googleSheetsUrl).catch(() => {});
+      }
+    }, 25000);
+
     const unsub = storage.subscribe(() => {
       setCurrentUser(storage.getCurrentUser());
       setSettings(storage.getSettings());
@@ -56,7 +72,11 @@ export default function App() {
       setPosts(storage.getPosts());
       setTestimonials(storage.getTestimonials());
     });
-    return unsub;
+
+    return () => {
+      clearInterval(interval);
+      unsub();
+    };
   }, []);
 
   // Handle Auth open

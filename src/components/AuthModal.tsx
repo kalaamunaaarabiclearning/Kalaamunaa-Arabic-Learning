@@ -48,9 +48,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const [isLoading, setIsLoading] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleStudentLogin = (e: React.FormEvent) => {
+  const handleStudentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -60,19 +62,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    const result = storage.loginStudent(studentEmail, studentPassword);
-    if (result.success && result.user) {
-      setSuccessMessage('Login berhasil! Mengalihkan...');
-      setTimeout(() => {
-        onSuccess(result.user!);
-        onClose();
-      }, 500);
-    } else {
-      setErrorMessage(result.message);
+    setIsLoading(true);
+    try {
+      const result = await storage.loginStudentAsync(studentEmail, studentPassword);
+      if (result.success && result.user) {
+        setSuccessMessage('Login berhasil! Mengalihkan...');
+        setTimeout(() => {
+          onSuccess(result.user!);
+          onClose();
+        }, 500);
+      } else {
+        setErrorMessage(result.message);
+      }
+    } catch {
+      setErrorMessage('Terjadi kendala koneksi database cloud.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleStudentRegister = (e: React.FormEvent) => {
+  const handleStudentRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -87,15 +96,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    const result = storage.registerStudent(regName, regEmail, regPassword, regPhone);
-    if (result.success && result.user) {
-      setSuccessMessage('Pendaftaran berhasil! Akun Anda siap digunakan.');
-      setTimeout(() => {
-        onSuccess(result.user!);
-        onClose();
-      }, 600);
-    } else {
-      setErrorMessage(result.message);
+    setIsLoading(true);
+    try {
+      const result = await storage.registerStudentAsync(regName, regEmail, regPassword, regPhone);
+      if (result.success && result.user) {
+        setSuccessMessage('Pendaftaran berhasil! Akun Anda siap digunakan.');
+        setTimeout(() => {
+          onSuccess(result.user!);
+          onClose();
+        }, 600);
+      } else {
+        setErrorMessage(result.message);
+      }
+    } catch {
+      setErrorMessage('Terjadi kendala koneksi database cloud.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -245,10 +261,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#0047AB] hover:bg-[#003380] text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm mt-2"
+                disabled={isLoading}
+                className="w-full py-3 bg-[#0047AB] hover:bg-[#003380] disabled:opacity-60 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm mt-2"
               >
-                <span>Masuk ke Kelas</span>
-                <ArrowRight className="w-4 h-4" />
+                {isLoading ? (
+                  <span>Memeriksa akun di database cloud...</span>
+                ) : (
+                  <>
+                    <span>Masuk ke Kelas</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
 
               <div className="text-center pt-2">
@@ -339,10 +362,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#0047AB] hover:bg-[#003380] text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm mt-3"
+                disabled={isLoading}
+                className="w-full py-3 bg-[#0047AB] hover:bg-[#003380] disabled:opacity-60 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm mt-3"
               >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Daftar & Buat Akun Peserta</span>
+                {isLoading ? (
+                  <span>Menyimpan akun ke database cloud...</span>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>Daftar & Buat Akun Peserta</span>
+                  </>
+                )}
               </button>
 
               <div className="text-center pt-2">

@@ -513,6 +513,54 @@ class StorageService {
     }
   }
 
+  public async registerStudentAsync(
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+  ): Promise<{ success: boolean; message: string; user?: User }> {
+    const settings = this.getSettings();
+    if (settings.googleSheetsUrl) {
+      try {
+        await this.syncFromCloud(settings.googleSheetsUrl);
+      } catch (err) {
+        console.warn('Pre-registration sync warning:', err);
+      }
+    }
+
+    const users = this.getUsers();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+      return { success: false, message: 'Email sudah terdaftar. Silakan gunakan email lain atau login.' };
+    }
+
+    const newUser: User = {
+      id: 'usr_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      name: name.trim(),
+      email: normalizedEmail,
+      password: password,
+      role: 'student',
+      phone: phone?.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    users.push(newUser);
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    this.setCurrentUser(newUser);
+
+    // Immediately push to Google Sheets so other devices see this new user
+    if (settings.googleSheetsUrl) {
+      try {
+        await this.syncToCloud(settings.googleSheetsUrl);
+      } catch (err) {
+        console.warn('Post-registration cloud push warning:', err);
+      }
+    }
+
+    return { success: true, message: 'Pendaftaran berhasil!', user: newUser };
+  }
+
   public registerStudent(name: string, email: string, password: string, phone?: string): { success: boolean; message: string; user?: User } {
     const users = this.getUsers();
     const normalizedEmail = email.trim().toLowerCase();
@@ -535,6 +583,38 @@ class StorageService {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     this.setCurrentUser(newUser);
     return { success: true, message: 'Pendaftaran berhasil!', user: newUser };
+  }
+
+  public async loginStudentAsync(
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message: string; user?: User }> {
+    const normalizedEmail = email.trim().toLowerCase();
+    let users = this.getUsers();
+    let found = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+
+    // If user not found in local cache or wrong password, actively pull from Google Sheets
+    const settings = this.getSettings();
+    if ((!found || found.password !== password) && settings.googleSheetsUrl) {
+      try {
+        await this.syncFromCloud(settings.googleSheetsUrl);
+        users = this.getUsers();
+        found = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+      } catch (err) {
+        console.warn('Realtime cloud sync on login failed:', err);
+      }
+    }
+
+    if (!found) {
+      return { success: false, message: 'Email tidak ditemukan. Pastikan Anda sudah mendaftar.' };
+    }
+
+    if (found.password && found.password !== password) {
+      return { success: false, message: 'Password salah. Silakan coba kembali.' };
+    }
+
+    this.setCurrentUser(found);
+    return { success: true, message: 'Login berhasil!', user: found };
   }
 
   public loginStudent(email: string, password: string): { success: boolean; message: string; user?: User } {
@@ -926,13 +1006,52 @@ class StorageService {
   public importDataBundle(data: any): boolean {
     try {
       if (!data) return false;
-      if (data.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
-      if (data.courses) localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(data.courses));
-      if (data.users) localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(data.users));
-      if (data.orders) localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(data.orders));
-      if (data.progress) localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(data.progress));
-      if (data.posts) localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(data.posts));
-      if (data.testimonials) localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(data.testimonials));
+      if (data.settings && typeof data.settings === 'object') {
+        const current = this.getSettings();
+        const merged = { ...current, ...data.settings };
+        if (!merged.googleSheetsUrl && current.googleSheetsUrl) {
+          merged.googleSheetsUrl = current.googleSheetsUrl;
+        }
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+      }
+      if (data.courses && Array.isArray(data.courses) && data.courses.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(data.courses));
+      }
+      if (data.users && Array.isArray(data.users)) {
+        // Smart merge users by email
+        const localUsers = this.getUsers();
+        const userMap = new Map<string, User>();
+        localUsers.forEach((u) => {
+          if (u.email) userMap.set(u.email.toLowerCase(), u);
+        });
+        data.users.forEach((u: User) => {
+          if (u.email) userMap.set(u.email.toLowerCase(), u);
+        });
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(Array.from(userMap.values())));
+      }
+      if (data.orders && Array.isArray(data.orders)) {
+        // Smart merge orders by ID
+        const localOrders = this.getOrders();
+        const orderMap = new Map<string, Order>();
+        localOrders.forEach((o) => {
+          if (o.id) orderMap.set(o.id, o);
+        });
+        data.orders.forEach((o: Order) => {
+          if (o.id) orderMap.set(o.id, o);
+        });
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(Array.from(orderMap.values())));
+      }
+      if (data.progress && typeof data.progress === 'object') {
+        const localProg = this.getAllProgress();
+        const mergedProg = { ...localProg, ...data.progress };
+        localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(mergedProg));
+      }
+      if (data.posts && Array.isArray(data.posts) && data.posts.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(data.posts));
+      }
+      if (data.testimonials && Array.isArray(data.testimonials) && data.testimonials.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(data.testimonials));
+      }
       this.notify();
       return true;
     } catch (err) {
