@@ -1,0 +1,6 @@
+{
+  "name": "Kalaamunaa For Arabic Learning",
+  "description": "Platform pembelajaran kursus bahasa Arab modern, interaktif, dan bersertifikat dengan sistem video, evaluasi kuis terarah, dan bimbingan pengajar berpengalaman.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
