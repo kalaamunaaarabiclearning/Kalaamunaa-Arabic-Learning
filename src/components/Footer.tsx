@@ -210,7 +210,7 @@ export const Footer: React.FC<FooterProps> = ({
               Nuansa <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#0047AB]"></span> Biru Tua #0047AB
             </span>
             <span>•</span>
-            <span>Konfigurasi Siap Netlify</span>
+            <span>Konfigurasi Siap Vercel & Netlify</span>
           </div>
         </div>
       </div>
