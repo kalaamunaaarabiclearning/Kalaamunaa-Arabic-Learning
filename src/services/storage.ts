@@ -347,6 +347,8 @@ export const TEACHER_CREDENTIALS = {
 // Storage Service Class
 class StorageService {
   private listeners: (() => void)[] = [];
+  private isImporting = false;
+  private syncDebounceTimer: any = null;
 
   constructor() {
     this.initializeDefaults();
@@ -359,7 +361,7 @@ class StorageService {
     };
   }
 
-  private notify() {
+  public notify(skipCloudSync: boolean = false) {
     this.listeners.forEach((l) => {
       try {
         l();
@@ -368,11 +370,20 @@ class StorageService {
       }
     });
 
-    // Attempt background Google Sheets sync if URL configured
-    const settings = this.getSettings();
-    if (settings.googleSheetsUrl) {
-      this.syncToCloud(settings.googleSheetsUrl).catch(() => {});
+    if (skipCloudSync || this.isImporting) {
+      return;
     }
+
+    // Debounce cloud sync so consecutive updates don't spam Google Apps Script
+    if (this.syncDebounceTimer) {
+      clearTimeout(this.syncDebounceTimer);
+    }
+    this.syncDebounceTimer = setTimeout(() => {
+      const settings = this.getSettings();
+      if (settings.googleSheetsUrl) {
+        this.syncToCloud(settings.googleSheetsUrl).catch(() => {});
+      }
+    }, 1200);
   }
 
   private initializeDefaults() {
@@ -500,7 +511,7 @@ class StorageService {
     } else {
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     }
-    this.notify();
+    this.notify(true);
   }
 
   // --- USERS MANAGEMENT ---
@@ -530,14 +541,30 @@ class StorageService {
 
     const users = this.getUsers();
     const normalizedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
 
-    if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+    // Protect Mudarris credentials and identity from being used by student registrants
+    if (password === TEACHER_CREDENTIALS.password || password.toLowerCase() === TEACHER_CREDENTIALS.password.toLowerCase()) {
+      return { 
+        success: false, 
+        message: 'Kata sandi ini dilindungi dan dikhususkan untuk akun pengajar. Silakan buat kata sandi lain untuk akun peserta.' 
+      };
+    }
+
+    if (normalizedEmail === 'kalaamunaa.arabiclearning@gmail.com' || trimmedName.toLowerCase() === TEACHER_CREDENTIALS.username.toLowerCase()) {
+      return { 
+        success: false, 
+        message: 'Identitas ini dikhususkan untuk Mudarris Kalaamunaa.' 
+      };
+    }
+
+    if (users.some((u) => u.email && u.email.trim().toLowerCase() === normalizedEmail)) {
       return { success: false, message: 'Email sudah terdaftar. Silakan gunakan email lain atau login.' };
     }
 
     const newUser: User = {
       id: 'usr_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-      name: name.trim(),
+      name: trimmedName,
       email: normalizedEmail,
       password: password,
       role: 'student',
@@ -564,14 +591,30 @@ class StorageService {
   public registerStudent(name: string, email: string, password: string, phone?: string): { success: boolean; message: string; user?: User } {
     const users = this.getUsers();
     const normalizedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
 
-    if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+    // Protect Mudarris credentials and identity from being used by student registrants
+    if (password === TEACHER_CREDENTIALS.password || password.toLowerCase() === TEACHER_CREDENTIALS.password.toLowerCase()) {
+      return { 
+        success: false, 
+        message: 'Kata sandi ini dilindungi dan dikhususkan untuk akun pengajar. Silakan buat kata sandi lain untuk akun peserta.' 
+      };
+    }
+
+    if (normalizedEmail === 'kalaamunaa.arabiclearning@gmail.com' || trimmedName.toLowerCase() === TEACHER_CREDENTIALS.username.toLowerCase()) {
+      return { 
+        success: false, 
+        message: 'Identitas ini dikhususkan untuk Mudarris Kalaamunaa.' 
+      };
+    }
+
+    if (users.some((u) => u.email && u.email.trim().toLowerCase() === normalizedEmail)) {
       return { success: false, message: 'Email sudah terdaftar. Silakan gunakan email lain atau login.' };
     }
 
     const newUser: User = {
       id: 'usr_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-      name: name.trim(),
+      name: trimmedName,
       email: normalizedEmail,
       password: password,
       role: 'student',
@@ -586,20 +629,63 @@ class StorageService {
   }
 
   public async loginStudentAsync(
-    email: string,
+    identifier: string,
     password: string
   ): Promise<{ success: boolean; message: string; user?: User }> {
-    const normalizedEmail = email.trim().toLowerCase();
-    let users = this.getUsers();
-    let found = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+    const trimmedId = identifier.trim();
+    const lowerId = trimmedId.toLowerCase();
 
-    // If user not found in local cache or wrong password, actively pull from Google Sheets
+    // Check if Mudarris is logging in via username or admin email
+    const isTeacherUsername = lowerId === TEACHER_CREDENTIALS.username.toLowerCase();
+    const isTeacherEmail = lowerId === 'kalaamunaa.arabiclearning@gmail.com';
+
+    if (isTeacherUsername || isTeacherEmail) {
+      if (password === TEACHER_CREDENTIALS.password) {
+        const teacherUser: User = {
+          id: 'user-mudarris',
+          name: 'Mudarris Kalaamunaa',
+          email: 'kalaamunaa.arabiclearning@gmail.com',
+          role: 'teacher',
+          createdAt: new Date().toISOString(),
+        };
+        this.setCurrentUser(teacherUser);
+        return { 
+          success: true, 
+          message: 'Ahlan wa Sahlan, Mudarris Kalaamunaa! Mengalihkan ke Dasbor...', 
+          user: teacherUser 
+        };
+      } else {
+        return { 
+          success: false, 
+          message: 'Password Mudarris Kalaamunaa salah. Periksa kembali huruf besar/kecil.' 
+        };
+      }
+    }
+
+    // Normal student login by email
+    let users = this.getUsers();
+    let found = users.find((u) => u.email && u.email.trim().toLowerCase() === lowerId);
+
+    // If user not found in local cache or wrong password, actively pull fresh data directly from Google Sheets
     const settings = this.getSettings();
     if ((!found || found.password !== password) && settings.googleSheetsUrl) {
       try {
-        await this.syncFromCloud(settings.googleSheetsUrl);
-        users = this.getUsers();
-        found = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+        const remoteData = await fetchFromGoogleSheets(settings.googleSheetsUrl);
+        if (remoteData && typeof remoteData === 'object') {
+          if (Array.isArray(remoteData.users)) {
+            const remoteUser = remoteData.users.find(
+              (u: User) => u.email && u.email.trim().toLowerCase() === lowerId
+            );
+            if (remoteUser) {
+              found = remoteUser;
+            }
+          }
+          this.importDataBundle(remoteData);
+        }
+        if (!found) {
+          users = this.getUsers();
+          found = users.find((u) => u.email && u.email.trim().toLowerCase() === lowerId);
+        }
       } catch (err) {
         console.warn('Realtime cloud sync on login failed:', err);
       }
@@ -617,10 +703,39 @@ class StorageService {
     return { success: true, message: 'Login berhasil!', user: found };
   }
 
-  public loginStudent(email: string, password: string): { success: boolean; message: string; user?: User } {
+  public loginStudent(identifier: string, password: string): { success: boolean; message: string; user?: User } {
+    const trimmedId = identifier.trim();
+    const lowerId = trimmedId.toLowerCase();
+
+    // Check if Mudarris is logging in via username or admin email
+    const isTeacherUsername = lowerId === TEACHER_CREDENTIALS.username.toLowerCase();
+    const isTeacherEmail = lowerId === 'kalaamunaa.arabiclearning@gmail.com';
+
+    if (isTeacherUsername || isTeacherEmail) {
+      if (password === TEACHER_CREDENTIALS.password) {
+        const teacherUser: User = {
+          id: 'user-mudarris',
+          name: 'Mudarris Kalaamunaa',
+          email: 'kalaamunaa.arabiclearning@gmail.com',
+          role: 'teacher',
+          createdAt: new Date().toISOString(),
+        };
+        this.setCurrentUser(teacherUser);
+        return { 
+          success: true, 
+          message: 'Ahlan wa Sahlan, Mudarris Kalaamunaa! Mengalihkan ke Dasbor...', 
+          user: teacherUser 
+        };
+      } else {
+        return { 
+          success: false, 
+          message: 'Password Mudarris Kalaamunaa salah. Periksa kembali huruf besar/kecil.' 
+        };
+      }
+    }
+
     const users = this.getUsers();
-    const normalizedEmail = email.trim().toLowerCase();
-    const found = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+    const found = users.find((u) => u.email && u.email.trim().toLowerCase() === lowerId);
 
     if (!found) {
       return { success: false, message: 'Email tidak ditemukan. Pastikan Anda sudah mendaftar.' };
@@ -632,21 +747,6 @@ class StorageService {
 
     this.setCurrentUser(found);
     return { success: true, message: 'Login berhasil!', user: found };
-  }
-
-  public loginTeacher(username: string, password: string): { success: boolean; message: string; user?: User } {
-    if (username.trim() === TEACHER_CREDENTIALS.username && password === TEACHER_CREDENTIALS.password) {
-      const teacherUser: User = {
-        id: 'user-mudarris',
-        name: 'Mudarris Kalaamunaa',
-        email: 'kalaamunaa.arabiclearning@gmail.com',
-        role: 'teacher',
-        createdAt: new Date().toISOString(),
-      };
-      this.setCurrentUser(teacherUser);
-      return { success: true, message: 'Ahlan wa Sahlan, Mudarris Kalaamunaa!', user: teacherUser };
-    }
-    return { success: false, message: 'Username atau password Mudarris tidak cocok. Periksa kembali huruf besar/kecil.' };
   }
 
   // --- COURSES MANAGEMENT ---
@@ -1004,6 +1104,7 @@ class StorageService {
   }
 
   public importDataBundle(data: any): boolean {
+    this.isImporting = true;
     try {
       if (!data) return false;
       if (data.settings && typeof data.settings === 'object') {
@@ -1018,14 +1119,23 @@ class StorageService {
         localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(data.courses));
       }
       if (data.users && Array.isArray(data.users)) {
-        // Smart merge users by email
+        // Smart merge users by email, preserving passwords
         const localUsers = this.getUsers();
         const userMap = new Map<string, User>();
         localUsers.forEach((u) => {
-          if (u.email) userMap.set(u.email.toLowerCase(), u);
+          if (u.email) userMap.set(u.email.trim().toLowerCase(), u);
         });
         data.users.forEach((u: User) => {
-          if (u.email) userMap.set(u.email.toLowerCase(), u);
+          if (u.email) {
+            const key = u.email.trim().toLowerCase();
+            const existing = userMap.get(key);
+            userMap.set(key, {
+              ...existing,
+              ...u,
+              email: key,
+              password: u.password || existing?.password || '',
+            });
+          }
         });
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(Array.from(userMap.values())));
       }
@@ -1052,11 +1162,13 @@ class StorageService {
       if (data.testimonials && Array.isArray(data.testimonials) && data.testimonials.length > 0) {
         localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(data.testimonials));
       }
-      this.notify();
       return true;
     } catch (err) {
       console.error('Failed importing bundle:', err);
       return false;
+    } finally {
+      this.isImporting = false;
+      this.notify(true);
     }
   }
 

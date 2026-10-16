@@ -5,12 +5,10 @@ import {
   Lock, 
   Mail, 
   Phone, 
-  ShieldCheck, 
   ArrowRight, 
   Sparkles, 
   AlertCircle, 
   CheckCircle2, 
-  KeyRound,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -19,7 +17,7 @@ import { User } from '../types';
 
 interface AuthModalProps {
   isOpen: boolean;
-  initialTab?: 'student-login' | 'student-register' | 'teacher-login';
+  initialTab?: 'student-login' | 'student-register';
   onClose: () => void;
   onSuccess: (user: User) => void;
 }
@@ -30,12 +28,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [activeTab, setActiveTab] = useState<'student-login' | 'student-register' | 'teacher-login'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'student-login' | 'student-register'>(initialTab);
   
-  // Student Login fields
-  const [studentEmail, setStudentEmail] = useState('');
-  const [studentPassword, setStudentPassword] = useState('');
-  const [showStudentLoginPassword, setShowStudentLoginPassword] = useState(false);
+  // Login fields (supports both student email and mudarris username)
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Student Register fields
   const [regName, setRegName] = useState('');
@@ -43,11 +41,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [regPassword, setRegPassword] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [showStudentRegisterPassword, setShowStudentRegisterPassword] = useState(false);
-
-  // Teacher Login fields - mudarris fills username and password manually without autofill
-  const [teacherUsername, setTeacherUsername] = useState('');
-  const [teacherPassword, setTeacherPassword] = useState('');
-  const [showTeacherPassword, setShowTeacherPassword] = useState(false);
 
   // Status message
   const [errorMessage, setErrorMessage] = useState('');
@@ -57,21 +50,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleStudentLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!studentEmail.trim() || !studentPassword) {
-      setErrorMessage('Harap isi email dan password.');
+    if (!loginIdentifier.trim() || !loginPassword) {
+      setErrorMessage('Harap isi email / username dan password.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await storage.loginStudentAsync(studentEmail, studentPassword);
+      const result = await storage.loginStudentAsync(loginIdentifier, loginPassword);
       if (result.success && result.user) {
-        setSuccessMessage('Login berhasil! Mengalihkan...');
+        setSuccessMessage(result.message || 'Login berhasil! Mengalihkan...');
         setTimeout(() => {
           onSuccess(result.user!);
           onClose();
@@ -101,6 +94,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (regPassword === 'KaLaAmUnAa123' || regPassword.toLowerCase() === 'kalaamunaa123') {
+      setErrorMessage('Kata sandi ini dilindungi untuk keamanan sistem. Silakan gunakan kombinasi kata sandi lain untuk akun peserta.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const result = await storage.registerStudentAsync(regName, regEmail, regPassword, regPhone);
@@ -117,23 +115,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMessage('Terjadi kendala koneksi database cloud.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleTeacherLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
-
-    const result = storage.loginTeacher(teacherUsername, teacherPassword);
-    if (result.success && result.user) {
-      setSuccessMessage('Ahlan wa Sahlan, Mudarris Kalaamunaa!');
-      setTimeout(() => {
-        onSuccess(result.user!);
-        onClose();
-      }, 600);
-    } else {
-      setErrorMessage(result.message);
     }
   };
 
@@ -159,17 +140,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </span>
           </div>
           <h2 className="text-xl font-bold tracking-tight">
-            {activeTab === 'student-login' && 'Masuk Sebagai Peserta'}
-            {activeTab === 'student-register' && 'Daftar Akun Peserta Baru'}
-            {activeTab === 'teacher-login' && 'Portal Masuk Guru / Mudarris'}
+            {activeTab === 'student-login' ? 'Masuk ke Akun' : 'Daftar Akun Peserta Baru'}
           </h2>
           <p className="text-xs text-blue-100 mt-1">
-            {activeTab === 'teacher-login' 
-              ? 'Khusus pengajar dan admin pengelola kurikulum Kalaamunaa'
-              : 'Akses kelas video bahasa Arab, evaluasi kuis, dan sertifikat resmi'}
+            {activeTab === 'student-login'
+              ? 'Akses ruang kelas video pembelajaran, kuis evaluasi, dan modul belajar'
+              : 'Lengkapi data diri Anda untuk mulai belajar bahasa Arab terstruktur'}
           </p>
 
-          {/* Navigation Tabs */}
+          {/* Navigation Tabs (Only Masuk and Daftar) */}
           <div className="flex bg-blue-900/60 p-1 rounded-xl mt-5 text-xs font-semibold">
             <button
               onClick={() => { setActiveTab('student-login'); setErrorMessage(''); setSuccessMessage(''); }}
@@ -191,17 +170,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             >
               Daftar
             </button>
-            <button
-              onClick={() => { setActiveTab('teacher-login'); setErrorMessage(''); setSuccessMessage(''); }}
-              className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1 ${
-                activeTab === 'teacher-login' 
-                  ? 'bg-amber-400 text-slate-900 shadow-xs font-bold' 
-                  : 'text-amber-200 hover:text-white'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Guru</span>
-            </button>
           </div>
         </div>
 
@@ -222,21 +190,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* TAB 1: Student Login */}
+          {/* TAB 1: Unified Login (Student Email or Mudarris Username) */}
           {activeTab === 'student-login' && (
-            <form onSubmit={handleStudentLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Alamat Email Peserta
+                  Masukkan Email
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
-                    type="email"
+                    type="text"
                     required
-                    value={studentEmail}
-                    onChange={(e) => setStudentEmail(e.target.value)}
-                    placeholder="nama@email.com"
+                    value={loginIdentifier}
+                    onChange={(e) => setLoginIdentifier(e.target.value)}
+                    placeholder="Masukkan Email"
+                    autoComplete="off"
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0047AB] focus:bg-white"
                   />
                 </div>
@@ -249,20 +218,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
-                    type={showStudentLoginPassword ? 'text' : 'password'}
+                    type={showLoginPassword ? 'text' : 'password'}
                     required
-                    value={studentPassword}
-                    onChange={(e) => setStudentPassword(e.target.value)}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Masukkan kata sandi..."
+                    autoComplete="new-password"
                     className="w-full pl-10 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0047AB] focus:bg-white"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowStudentLoginPassword(!showStudentLoginPassword)}
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
                     className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 focus:outline-hidden transition-colors"
-                    title={showStudentLoginPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    title={showLoginPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                   >
-                    {showStudentLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -403,61 +373,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
                 </p>
               </div>
-            </form>
-          )}
-
-          {/* TAB 3: Teacher / Mudarris Login */}
-          {activeTab === 'teacher-login' && (
-            <form onSubmit={handleTeacherLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Username Guru / Mudarris
-                </label>
-                <div className="relative">
-                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                  <input
-                    type="text"
-                    required
-                    value={teacherUsername}
-                    onChange={(e) => setTeacherUsername(e.target.value)}
-                    placeholder="Masukkan username guru / mudarris..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white font-medium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Password Guru
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                  <input
-                    type={showTeacherPassword ? 'text' : 'password'}
-                    required
-                    value={teacherPassword}
-                    onChange={(e) => setTeacherPassword(e.target.value)}
-                    placeholder="Masukkan password guru..."
-                    className="w-full pl-10 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowTeacherPassword(!showTeacherPassword)}
-                    className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 focus:outline-hidden transition-colors"
-                    title={showTeacherPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                  >
-                    {showTeacherPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm mt-3"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Masuk Dasbor Guru</span>
-              </button>
             </form>
           )}
         </div>

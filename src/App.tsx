@@ -31,7 +31,7 @@ export default function App() {
 
   // Modals
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authInitialTab, setAuthInitialTab] = useState<'student-login' | 'student-register' | 'teacher-login'>('student-login');
+  const [authInitialTab, setAuthInitialTab] = useState<'student-login' | 'student-register'>('student-login');
   
   const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -80,7 +80,7 @@ export default function App() {
   }, []);
 
   // Handle Auth open
-  const handleOpenAuth = (tab: 'student-login' | 'student-register' | 'teacher-login' = 'student-login') => {
+  const handleOpenAuth = (tab: 'student-login' | 'student-register' = 'student-login') => {
     setAuthInitialTab(tab);
     setIsAuthOpen(true);
   };
@@ -242,7 +242,6 @@ export default function App() {
       {currentView !== 'classroom' && (
         <Footer
           settings={settings}
-          onTeacherLoginClick={() => handleOpenAuth('teacher-login')}
         />
       )}
 

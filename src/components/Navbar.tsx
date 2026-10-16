@@ -17,7 +17,7 @@ interface NavbarProps {
   cart: Course[];
   settings: SiteSettings;
   onOpenCart: () => void;
-  onOpenAuth: (initialTab?: 'student-login' | 'student-register' | 'teacher-login') => void;
+  onOpenAuth: (initialTab?: 'student-login' | 'student-register') => void;
   onNavigate: (view: 'landing' | 'student-dashboard' | 'admin-dashboard' | 'classroom') => void;
   currentView: string;
   onLogout: () => void;
@@ -70,14 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-4 text-[11px] text-blue-100">
-            <span className="hidden sm:inline">WhatsApp: +{settings.whatsappNumber}</span>
-            <button 
-              onClick={() => onOpenAuth('teacher-login')}
-              className="text-amber-300 hover:text-white flex items-center gap-1 transition-colors underline decoration-amber-400/50"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Portal Guru / Mudarris</span>
-            </button>
+            <span>WhatsApp: +{settings.whatsappNumber}</span>
           </div>
         </div>
       </div>
@@ -189,14 +182,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => onOpenAuth('student-login')}
                   className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-[#0047AB] hover:bg-slate-100 rounded-xl transition-colors"
                 >
-                  Masuk Peserta
+                  Masuk
                 </button>
                 <button
                   onClick={() => onOpenAuth('student-register')}
                   className="px-4 py-2 text-xs font-bold text-white bg-[#0047AB] hover:bg-[#003380] rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Daftar Sekarang</span>
+                  <span>Daftar</span>
                 </button>
               </div>
             )}
@@ -290,7 +283,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="py-2.5 text-center text-xs font-bold border border-slate-300 text-slate-700 rounded-xl"
                 >
-                  Masuk Peserta
+                  Masuk
                 </button>
                 <button
                   onClick={() => {
@@ -299,21 +292,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="py-2.5 text-center text-xs font-bold bg-[#0047AB] text-white rounded-xl"
                 >
-                  Daftar Akun
+                  Daftar
                 </button>
               </div>
             )}
-
-            <button
-              onClick={() => {
-                onOpenAuth('teacher-login');
-                setMobileMenuOpen(false);
-              }}
-              className="w-full py-2 text-center text-xs font-semibold text-amber-700 bg-amber-50 rounded-lg flex items-center justify-center gap-1.5"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Login Khusus Guru / Mudarris</span>
-            </button>
           </div>
         </div>
       )}

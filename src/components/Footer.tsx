@@ -15,13 +15,11 @@ import { SiteSettings } from '../types';
 interface FooterProps {
   settings: SiteSettings;
   onNavigateLandingSection?: (sectionId: string) => void;
-  onTeacherLoginClick?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   settings,
   onNavigateLandingSection,
-  onTeacherLoginClick,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -184,34 +182,16 @@ export const Footer: React.FC<FooterProps> = ({
                 </div>
               </a>
             </div>
-
-            {/* Quick Mudarris portal link in footer */}
-            <div className="pt-2">
-              <button
-                onClick={onTeacherLoginClick}
-                className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition-colors"
-              >
-                <span>Masuk sebagai Mudarris / Pengajar Kalaamunaa</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Bar: Copyright & Accreditation */}
-      <div className="bg-slate-950 border-t border-slate-800/80 py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      {/* Bottom Bar: Copyright */}
+      <div className="bg-slate-950 border-t border-slate-800/80 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
           <p>
             © {currentYear} <span className="text-white font-semibold">Kalaamunaa For Arabic Learning</span>. Hak Cipta Dilindungi Undang-Undang.
           </p>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              Nuansa <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#0047AB]"></span> Biru Tua #0047AB
-            </span>
-            <span>•</span>
-            <span>Konfigurasi Siap Vercel & Netlify</span>
-          </div>
         </div>
       </div>
     </footer>

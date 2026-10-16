@@ -123,9 +123,14 @@ export async function fetchFromGoogleSheets(url: string): Promise<any> {
     throw new Error('URL Google Apps Script tidak valid. Harap gunakan URL Web App dari script.google.com');
   }
 
-  const response = await fetch(url, {
+  // Add cache buster to always fetch freshest records across all devices and bypass browser/proxy 302 caching
+  const cacheBuster = `_cb=${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const fetchUrl = url + (url.includes('?') ? '&' : '?') + cacheBuster;
+
+  const response = await fetch(fetchUrl, {
     method: 'GET',
     redirect: 'follow',
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -144,26 +149,42 @@ export async function sendToGoogleSheets(url: string, payload: any): Promise<boo
     return false;
   }
 
+  const bodyData = JSON.stringify({
+    action: 'syncAll',
+    payload: payload,
+  });
+
+  // Attempt 1: Standard fetch with text/plain (avoids CORS preflight)
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
       },
-      body: JSON.stringify({
-        action: 'syncAll',
-        payload: payload,
-      }),
+      body: bodyData,
       redirect: 'follow',
     });
 
-    if (!response.ok) {
-      console.warn('Google Sheets sync warning: HTTP status', response.status);
-      return false;
+    if (response.ok) {
+      return true;
     }
+  } catch (err) {
+    console.warn('Standard POST redirect/CORS blocked in browser, using robust fallback:', err);
+  }
+
+  // Attempt 2: Fallback with mode: 'no-cors' (browser reliably delivers POST payload to Google Apps Script)
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: bodyData,
+    });
     return true;
-  } catch (error) {
-    console.warn('Google Sheets sync network notice:', error);
+  } catch (fallbackError) {
+    console.error('Google Sheets sendToGoogleSheets failed:', fallbackError);
     return false;
   }
 }
