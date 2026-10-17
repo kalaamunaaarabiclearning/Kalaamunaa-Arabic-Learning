@@ -56,7 +56,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMessage('');
 
     if (!loginIdentifier.trim() || !loginPassword) {
-      setErrorMessage('Harap isi email / username dan password.');
+      setErrorMessage('Harap isi email dan kata sandi.');
       return;
     }
 

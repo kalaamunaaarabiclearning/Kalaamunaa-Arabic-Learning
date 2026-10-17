@@ -636,7 +636,10 @@ class StorageService {
     const lowerId = trimmedId.toLowerCase();
 
     // Check if Mudarris is logging in via username or admin email
-    const isTeacherUsername = lowerId === TEACHER_CREDENTIALS.username.toLowerCase();
+    const isTeacherUsername = 
+      lowerId === TEACHER_CREDENTIALS.username.toLowerCase() ||
+      lowerId === 'mudarris' ||
+      lowerId === 'mudarriskalaamunaa';
     const isTeacherEmail = lowerId === 'kalaamunaa.arabiclearning@gmail.com';
 
     if (isTeacherUsername || isTeacherEmail) {
@@ -708,7 +711,10 @@ class StorageService {
     const lowerId = trimmedId.toLowerCase();
 
     // Check if Mudarris is logging in via username or admin email
-    const isTeacherUsername = lowerId === TEACHER_CREDENTIALS.username.toLowerCase();
+    const isTeacherUsername = 
+      lowerId === TEACHER_CREDENTIALS.username.toLowerCase() ||
+      lowerId === 'mudarris' ||
+      lowerId === 'mudarriskalaamunaa';
     const isTeacherEmail = lowerId === 'kalaamunaa.arabiclearning@gmail.com';
 
     if (isTeacherUsername || isTeacherEmail) {

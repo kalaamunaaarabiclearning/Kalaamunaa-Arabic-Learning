@@ -24,7 +24,7 @@ export interface Course {
   title: string;
   arabicTitle?: string;
   level: 'Pemula (Mubtadi\')' | 'Menengah (Mutawassith)' | 'Mahir (Mutaqaddim)';
-  category: 'Nahwu & Shorof' | 'Percakapan (Hiwar)' | 'Membaca Kitab' | 'Bahasa Arab Al-Qur\'an';
+  category: string;
   price: number;
   originalPrice?: number;
   thumbnail: string;

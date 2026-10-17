@@ -1508,16 +1508,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Kategori Kursus</label>
-                  <select
-                    value={editingCourse.category}
-                    onChange={(e: any) => setEditingCourse({ ...editingCourse, category: e.target.value })}
+                  <input
+                    type="text"
+                    required
+                    value={editingCourse.category || ''}
+                    onChange={(e) => setEditingCourse({ ...editingCourse, category: e.target.value })}
+                    placeholder="Ketik kategori kursus (misal: Nahwu & Shorof, Percakapan, dll)"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl"
-                  >
-                    <option value="Nahwu & Shorof">Nahwu & Shorof</option>
-                    <option value="Percakapan (Hiwar)">Percakapan (Hiwar)</option>
-                    <option value="Membaca Kitab">Membaca Kitab</option>
-                    <option value="Bahasa Arab Al-Qur'an">Bahasa Arab Al-Qur'an</option>
-                  </select>
+                  />
                 </div>
               </div>
 
