@@ -113,6 +113,7 @@ export interface SiteSettings {
   youtubeHandle: string; // @kalaamunaa.arabic
   aboutTitle: string;
   aboutContent: string;
+  aboutImageUrl?: string;
   googleSheetsUrl?: string; // Google Apps Script Web App URL for real-time live sync
   // Pratinjau Kelas (Trial Class Video Section)
   previewBadge?: string;

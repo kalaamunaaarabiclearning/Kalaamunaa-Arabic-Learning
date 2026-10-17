@@ -255,7 +255,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="lg:col-span-5 relative">
             <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200">
               <img
-                src="https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=800&q=80"
+                src={settings.aboutImageUrl || "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=800&q=80"}
                 alt="Belajar Bahasa Arab Kalaamunaa"
                 className="w-full h-[400px] object-cover"
               />
@@ -267,17 +267,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <p className="text-xs text-blue-100 mt-1">
                   Membuka gerbang pemahaman bahasa Al-Qur'an dan Sunnah secara mendalam.
                 </p>
-              </div>
-            </div>
-
-            {/* Floating Trust Badge */}
-            <div className="absolute -bottom-6 -right-4 sm:right-6 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                <Award className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">Kurikulum Teruji</p>
-                <p className="text-[11px] text-slate-500">Materi Tadarruj dari Nol</p>
               </div>
             </div>
           </div>

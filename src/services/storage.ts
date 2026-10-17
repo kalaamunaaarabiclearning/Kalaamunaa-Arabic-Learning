@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   youtubeHandle: '@kalaamunaa.arabic',
   aboutTitle: 'Tentang Kalaamunaa For Arabic Learning',
   aboutContent: 'Kalaamunaa For Arabic Learning adalah pusat pendidikan bahasa Arab modern yang dirancang untuk membantu umat Islam dari berbagai latar belakang memahami bahasa Al-Qur\'an, literatur klasik Islam, dan kemampuan berkomunikasi aktif. Dengan silabus yang teruji dan pendekatan bertahap (tadarruj), siswa dituntun mulai dari nol hingga mahir menganalisis kaidah bahasa dan bercakap-cakap dengan fasih.',
+  aboutImageUrl: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=800&q=80',
   googleSheetsUrl: 'https://script.google.com/macros/s/AKfycbwG_AIXop_Su7QzSoIuM0Q7FP9jq9kSVOguUqH09BonZ9lRHNxAe_4uf7ZPU9Ti9X6f/exec',
   previewBadge: 'Uji Coba Kelas Gratis',
   previewTitle: 'Pratinjau Kelas & Cuplikan Pembelajaran',
@@ -636,10 +637,7 @@ class StorageService {
     const lowerId = trimmedId.toLowerCase();
 
     // Check if Mudarris is logging in via username or admin email
-    const isTeacherUsername = 
-      lowerId === TEACHER_CREDENTIALS.username.toLowerCase() ||
-      lowerId === 'mudarris' ||
-      lowerId === 'mudarriskalaamunaa';
+    const isTeacherUsername = lowerId === TEACHER_CREDENTIALS.username.toLowerCase();
     const isTeacherEmail = lowerId === 'kalaamunaa.arabiclearning@gmail.com';
 
     if (isTeacherUsername || isTeacherEmail) {
@@ -711,10 +709,7 @@ class StorageService {
     const lowerId = trimmedId.toLowerCase();
 
     // Check if Mudarris is logging in via username or admin email
-    const isTeacherUsername = 
-      lowerId === TEACHER_CREDENTIALS.username.toLowerCase() ||
-      lowerId === 'mudarris' ||
-      lowerId === 'mudarriskalaamunaa';
+    const isTeacherUsername = lowerId === TEACHER_CREDENTIALS.username.toLowerCase();
     const isTeacherEmail = lowerId === 'kalaamunaa.arabiclearning@gmail.com';
 
     if (isTeacherUsername || isTeacherEmail) {

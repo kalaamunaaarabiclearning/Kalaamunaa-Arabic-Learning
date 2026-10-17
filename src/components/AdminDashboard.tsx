@@ -26,7 +26,8 @@ import {
   Eye,
   AlertTriangle,
   Download,
-  Upload
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Course, Lesson, Order, Post, SiteSettings, Testimonial, User } from '../types';
 import { storage } from '../services/storage';
@@ -1199,16 +1200,80 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Tentang Kalaamunaa (About Us)
-              </label>
-              <textarea
-                rows={4}
-                value={settings.aboutContent}
-                onChange={(e) => setSettings({ ...settings, aboutContent: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"
-              />
+            {/* SECTION TENTANG KALAAMUNAA */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <div className="flex items-center gap-2 text-slate-800">
+                <BookOpen className="w-4 h-4 text-[#0047AB]" />
+                <h3 className="text-xs font-extrabold uppercase tracking-wider">
+                  Pengaturan Section "Tentang Kalaamunaa"
+                </h3>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Judul Section Tentang Kami
+                </label>
+                <input
+                  type="text"
+                  value={settings.aboutTitle}
+                  onChange={(e) => setSettings({ ...settings, aboutTitle: e.target.value })}
+                  placeholder="Tentang Kalaamunaa For Arabic Learning"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Deskripsi / Profil Singkat Tentang Kalaamunaa
+                </label>
+                <textarea
+                  rows={4}
+                  value={settings.aboutContent}
+                  onChange={(e) => setSettings({ ...settings, aboutContent: e.target.value })}
+                  placeholder="Tuliskan profil lembaga kursus..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-[#0047AB]" />
+                  <span>Link / URL Gambar Section Tentang Kalaamunaa</span>
+                </label>
+                <input
+                  type="url"
+                  value={settings.aboutImageUrl || ''}
+                  onChange={(e) => setSettings({ ...settings, aboutImageUrl: e.target.value })}
+                  placeholder="https://images.unsplash.com/photo-1542816417-0983c9c9ad53?..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white font-mono"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Masukkan link gambar kustom (bisa dari Unsplash, hosting gambar pribadi, Imgur, dll).
+                </p>
+
+                {/* Pratinjau Gambar */}
+                {settings.aboutImageUrl && (
+                  <div className="mt-3 p-3 bg-white rounded-xl border border-slate-200 flex items-center gap-3">
+                    <img
+                      src={settings.aboutImageUrl}
+                      alt="Pratinjau Gambar Tentang"
+                      className="w-20 h-16 object-cover rounded-lg border border-slate-200 shrink-0"
+                      onError={(e: any) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <div className="overflow-hidden">
+                      <p className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Pratinjau Gambar Aktif</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate max-w-sm font-mono mt-0.5">
+                        {settings.aboutImageUrl}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* SECTION PRATINJAU KELAS (VIDEO YOUTUBE UJI COBA) */}
